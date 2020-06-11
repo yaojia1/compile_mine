@@ -34,7 +34,7 @@ public class parsing {
 
     private Stack<String> reduce_values=new Stack<>();
     private String action;
-    private wordtype wordtype=new wordtype();
+    private wordtype wordtype_this=new wordtype();
     private translate trans_mine = new translate();
     /**private String[][] ACTION2={
             {"S4","","" ,"" , "", "","S5","","1","2","3"},
@@ -48,6 +48,7 @@ public class parsing {
     private void buildLRGS(){
         String[] temp;
         int j=0;
+        System.out.println("使用助记符重构文法");
         //LinkedHashMap<String,String[]> tempmap;
         for (String gs:LRGS_0){
             temp=gs.split("->");
@@ -89,8 +90,10 @@ public class parsing {
 
         for (int k=0;k<G_num;k++){
             for (String ss : LRGS_1[k].keySet()){
-                System.out.println(ss+": "+ Arrays.toString(LRGS_1[k].get(ss)));
-
+                System.out.format("\n%-2s-> ",ss);
+                for (String ssin:LRGS_1[k].get(ss))
+                    if (ssin != null && !ssin.isEmpty())
+                        System.out.print(ssin+" ");
             }
 
         }
@@ -120,8 +123,16 @@ public class parsing {
         }
         bf.close();
         fread.close();
+        System.out.println("生成ACTION 和 GO 表：");
+        for (int i2=0 ;i2 < action_w-5;i2++) {
+            System.out.format("%-5s",wordtype_this.keyop[i2]);
+        }
+
+        System.out.format("%-5s%-5s%-5s%-5s%-5s\n","i","#","E","T","F");
         for (String[] sss:ACTION){
-            System.out.println(Arrays.asList(sss));
+            for (String strr: sss)
+                System.out.format("%-5s",strr);
+            System.out.print('\n');
         }
     }
 
@@ -129,7 +140,7 @@ public class parsing {
         readFile(filename);
         buildaction();
         buildLRGS();
-        readmlist();
+        //readmlist();
         analyzeLR();
 
     }
@@ -180,7 +191,7 @@ public class parsing {
 
     public void analyzeLR() throws IOException {
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("src/com/lab/files/four.txt")));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("src/com/lab/files/OUTPUT.txt")));
 
         String action = "";
         Integer index = 0;
@@ -191,14 +202,14 @@ public class parsing {
             a =aa;
         }
 
-        System.out.println("****************LR分析过程**********");
-        System.out.format("%-35s\t%-35s\t%-10s\tAction\n","state","Symbol","Input");
+        System.out.println("\n****************LR分析过程**********");
+        System.out.format("%-35s\t%-35s\t%-35s\tAction\n","state","Symbol","Next Input");
         //this.displayLR();
         int ac=0;
         while (true) {
 
 
-            System.out.format("%-35s\t%-35s\t%-10s\t%s\n",stackState.toString(),stackSymbol.toString(),a,action);
+            System.out.format("%-35s\t%-35s\t%-35s\t%s\n",stackState.toString(),stackSymbol.toString(),a,action);
             Integer ss = stackState.peek();
             //System.out.println(Action(ss,a));
             // 查表为移进
@@ -295,8 +306,22 @@ public class parsing {
                 //System.out.println("Action= "+action);
 
             } else if (Action(ss , a).equals("Acc")){
-                System.out.println("program is accept!");
-                break;
+                stackInput.poll();
+                stackState.pop();
+                stackSymbol.pop();
+                if (stackInput.isEmpty()) {
+                    System.out.println("program is accept!");
+                    break;
+                }
+                inputword = stackInput.peek();
+                a="";
+                for (String aa:inputword.keySet()){
+                    a =aa;
+                }
+                action = "Accept ";
+                System.out.println("program is accept! error :" +ac+"\nanalyze next line");
+                System.out.format("%-35s\t%-35s\t%-35s\tAction\n","state","Symbol","Next Input");
+                ac=0;
             }
             else{
                 System.out.println("ERROR!");
@@ -361,7 +386,7 @@ public class parsing {
         if (ww!=-1)
             return ACTION[state][ww];
 
-        ww=wordtype.getkeyvalue(wordt);
+        ww=wordtype_this.getkeyvalue(wordt);
 
 
         if (ww!=-1 && ww<action_w-3){
